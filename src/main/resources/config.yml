@@ -1,0 +1,25 @@
+MySQL:
+  host: 192.99.150.78
+  port: 3306
+  user: u24_BpegSmhmUo
+  password: '.Lb!8!HRz@^lxD4he+FmKqjC'
+  database: s24_Ok
+
+socket_address: 0.0.0.0
+bungee: true
+
+void_height: 1
+
+scoreboards:
+  normal_sumo:
+    title: ""
+    lines:
+      - ""
+  block_sumo:
+    title: ""
+    players_format: "%player_name%: %player_lives%"
+    lines:
+      - ""
+
+lobby_command: 'lobby'
+version: 1.1

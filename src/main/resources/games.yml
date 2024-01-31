@@ -1,0 +1,7 @@
+1:
+  type: BLOCK_SUMO
+  display_name: Mirage
+  max_players: 12
+  spawn_points:
+    - ""
+    - ""

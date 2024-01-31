@@ -1,0 +1,9 @@
+name: BridgerSumo
+author: xDabDoub
+version: 1.0-BETA
+main: me.yhamarsheh.bridgersumo.BridgerSumo
+depend: [PlaceholderAPI, Multiverse-Core]
+
+commands:
+  bridgersumo:
+    description: "Bridger Sumo main command"
