@@ -69,6 +69,7 @@ public abstract class Game {
 
     public void addPlayer(DabPlayer dabPlayer) {
         playerList.put(dabPlayer, PlayerState.ALIVE);
+        showToOtherPlayers(dabPlayer);
     }
 
     public GameType getGameType() {
@@ -168,6 +169,18 @@ public abstract class Game {
     public abstract void quitLogic(DabPlayer player);
 
     public abstract void giveKit(DabPlayer player);
+
+    public void hideFromOtherPlayers(DabPlayer player) {
+        for (DabPlayer dabPlayer : getPlayerList().keySet()) {
+            dabPlayer.getPlayer().hidePlayer(player.getPlayer());
+        }
+    }
+
+    public void showToOtherPlayers(DabPlayer player) {
+        for (DabPlayer dabPlayer : getPlayerList().keySet()) {
+            dabPlayer.getPlayer().showPlayer(player.getPlayer());
+        }
+    }
 
     public String getDisplayName() {
         return displayName;

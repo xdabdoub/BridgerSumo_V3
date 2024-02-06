@@ -1,6 +1,8 @@
 package me.yhamarsheh.bridgersumo.utilities;
 
 import me.clip.placeholderapi.PlaceholderAPI;
+import me.yhamarsheh.bridgersumo.game.modes.BlockSumo;
+import me.yhamarsheh.bridgersumo.storage.objects.DabPlayer;
 import net.kyori.adventure.text.Component;
 import net.minecraft.server.v1_8_R3.IChatBaseComponent;
 import net.minecraft.server.v1_8_R3.PacketPlayOutTitle;
@@ -15,6 +17,12 @@ public class ChatUtils {
 
     public static String placeholders(Player player, String s) {
         return color(PlaceholderAPI.setPlaceholders(player, s));
+    }
+
+    public static String placeholders(BlockSumo game, DabPlayer player, String s) {
+        return color(PlaceholderAPI.setPlaceholders(player.getPlayer(), s
+                .replace("%player_color%", game.getPlayerTeam(player).getColor().getChatColor() + "")
+                .replace("%player_color_letter%", game.getPlayerTeam(player).getColor().getLetter())));
     }
 
     public static Component component(String s) {

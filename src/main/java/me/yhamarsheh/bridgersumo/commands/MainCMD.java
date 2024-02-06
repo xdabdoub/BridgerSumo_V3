@@ -3,6 +3,7 @@ package me.yhamarsheh.bridgersumo.commands;
 import dev.triumphteam.gui.builder.item.ItemBuilder;
 import me.yhamarsheh.bridgersumo.BridgerSumo;
 import me.yhamarsheh.bridgersumo.commands.handler.RegisterAsCommand;
+import me.yhamarsheh.bridgersumo.enums.EventType;
 import me.yhamarsheh.bridgersumo.enums.GameState;
 import me.yhamarsheh.bridgersumo.game.Game;
 import me.yhamarsheh.bridgersumo.game.GameType;
@@ -218,7 +219,7 @@ public class MainCMD {
     @RegisterAsCommand(
             command = "/bridgersumo forcestart",
             permission = "bridgersumo.admin",
-            disallowNonPlayer = false
+            disallowNonPlayer = true
     )
     public void forceStart(CommandSender commandSender, String[] params) {
         Player player = (Player) commandSender;
@@ -231,6 +232,39 @@ public class MainCMD {
         }
 
        new GameStartup(plugin, game, true);
+    }
+
+    @RegisterAsCommand(
+            command = "/bridgersumo addeventitem",
+            permission = "bridgersumo.admin",
+            overrideParameterLimit = true,
+            disallowNonPlayer = true
+    )
+    public void addEventItem(CommandSender commandSender, String[] params) {
+        Player player = (Player) commandSender;
+
+        EventType type;
+
+        try {
+            type = EventType.valueOf(params[0].toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            player.sendMessage(Messages.INVALID_EVENT_TYPE.toString());
+            return;
+        }
+
+        if (player.getItemInHand() == null || player.getItemInHand().getType() == Material.AIR) {
+            player.sendMessage(Messages.EMPTY_HAND.toString());
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1; i < params.length; i++) {
+            sb.append(params[i]);
+            if (i + 1 >= params.length) sb.append(" ");
+        }
+
+        plugin.getEventsManager().addItem(type, player.getItemInHand(), sb.toString());
+        player.sendMessage(ChatUtils.color("&a&lEVENT ITEM! &aSuccessfully added the event item to the events of type &e" + type.name() + "&a!"));
     }
 
     public static Map<Player, Game> getSetups() {

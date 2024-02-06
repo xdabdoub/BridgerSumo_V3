@@ -78,9 +78,11 @@ public class ScoreboardManager implements Disableable {
                         String s = l.replace("%players%", BLOCK_SUMO_PLAYERS_FORMAT);
                         int i = 0;
                         for (DabPlayer player : blockSumo.getLives().keySet()) {
+                            String color = (blockSumo.getPlayerTeam(player) == null ? "" : blockSumo.getPlayerTeam(player).getColor().getChatColor() + "");
                             lines.add(ChatUtils.placeholders(player.getPlayer(),
                                     s.replace("%player_lives%",
-                                            "" + blockSumo.getPlayerLives(player))));
+                                                    blockSumo.getPlayerLivesAsString(player))
+                                            .replace("%player_color%", color)));
                             i++;
                             if (i == 15 - BLOCK_SUMO_LINES.size()) break;
                         }

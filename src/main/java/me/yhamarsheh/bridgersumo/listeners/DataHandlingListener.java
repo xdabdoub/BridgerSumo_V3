@@ -43,7 +43,14 @@ public class DataHandlingListener implements Listener {
             return;
         }
 
-        player.performCommand("bridgersumo join " + plugin.getRedisManager().getGameMap().get(player.getUniqueId()).getId());
-        plugin.getRedisManager().getGameMap().remove(player.getUniqueId());
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.hidePlayer(player);
+        }
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            player.performCommand("bridgersumo join " + plugin.getRedisManager()
+                    .getGameMap().get(player.getUniqueId()).getId());
+            plugin.getRedisManager().getGameMap().remove(player.getUniqueId());
+        }, 3L);
     }
 }

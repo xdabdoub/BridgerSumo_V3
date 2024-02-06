@@ -6,6 +6,7 @@ import me.yhamarsheh.bridgersumo.enums.GameState;
 import me.yhamarsheh.bridgersumo.game.modes.BlockSumo;
 import me.yhamarsheh.bridgersumo.runnables.GoldBlockWin;
 import me.yhamarsheh.bridgersumo.storage.objects.DabPlayer;
+import me.yhamarsheh.bridgersumo.utilities.ChatUtils;
 import net.minecraft.server.v1_8_R3.BlockPosition;
 import net.minecraft.server.v1_8_R3.PacketPlayOutBlockBreakAnimation;
 import org.bukkit.Bukkit;
@@ -16,17 +17,21 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.Wool;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -36,12 +41,20 @@ import java.util.UUID;
 public class GameListener implements Listener {
 
     private final BridgerSumo plugin;
-    private final int VOID_HEIGHT;
+    private final int NORMAL_VOID_HEIGHT;
+    private final int BLOCK_SUMO_VOID_HEIGHT;
+    private final int MAX_BLOCK_HEIGHT;
 
+    private final String CHAT_FORMAT;
 
     public GameListener(BridgerSumo plugin) {
         this.plugin = plugin;
-        this.VOID_HEIGHT = plugin.getConfig().getInt("void_height");
+        this.NORMAL_VOID_HEIGHT = plugin.getConfig().getInt("normal_void_height");
+        this.BLOCK_SUMO_VOID_HEIGHT = plugin.getConfig().getInt("block_sumo_void_height");
+        this.MAX_BLOCK_HEIGHT = plugin.getConfig().getInt("max_place_height");
+
+        this.CHAT_FORMAT = plugin.getConfig().getString("game_chat_format");
+
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
@@ -53,11 +66,21 @@ public class GameListener implements Listener {
         Game game = plugin.getGamesManager().getPlayerGame(dabPlayer);
         if (game == null) return;
 
-        if (dabPlayer.getLocation().getY() <= game.getSpawnPoints().get(0).getY() - VOID_HEIGHT && game.getState() != GameState.ENDED) {
-            if (game.getState() == GameState.PLAYING && !player.getAllowFlight()) {
-                game.deathLogic(dabPlayer, true);
-            } else {
-                player.teleport(game.getWaitingLobby());
+        if (game.getGameType() == GameType.BLOCK_SUMO) {
+            if (dabPlayer.getLocation().getY() <= game.getSpawnPoints().get(0).getY() - BLOCK_SUMO_VOID_HEIGHT && game.getState() != GameState.ENDED) {
+                if (game.getState() == GameState.PLAYING && !player.getAllowFlight()) {
+                    game.deathLogic(dabPlayer, true);
+                } else {
+                    player.teleport(game.getWaitingLobby());
+                }
+            }
+        } else if (game.getGameType() == GameType.NORMAL) {
+            if (dabPlayer.getLocation().getY() <= game.getSpawnPoints().get(0).getY() - NORMAL_VOID_HEIGHT && game.getState() != GameState.ENDED) {
+                if (game.getState() == GameState.PLAYING && !player.getAllowFlight()) {
+                    game.deathLogic(dabPlayer, true);
+                } else {
+                    player.teleport(game.getWaitingLobby());
+                }
             }
         }
 
@@ -69,7 +92,6 @@ public class GameListener implements Listener {
 
         if (game.getClinchWinPlayer() == null || game.getClinchWinPlayer() == Debug.DUMMY_UUID.getUuid()) {
             game.setClinchWinPlayer(player.getUniqueId());
-            Bukkit.broadcastMessage(game.getClinchWinPlayer().toString() + " ; " + player.getUniqueId().toString());
             new GoldBlockWin(plugin, dabPlayer, game);
         }
     }
@@ -95,11 +117,40 @@ public class GameListener implements Listener {
     }
 
     @EventHandler
+    public void onEntityExplode(EntityExplodeEvent e) {
+        e.blockList().clear();
+    }
+
+    @EventHandler
     public void onDamage(EntityDamageByEntityEvent e) {
         Entity entity = e.getEntity();
         if (!(entity instanceof Player)) return;
 
         Player player = (Player) e.getEntity();
+
+        if (!(e.getDamager() instanceof Player)) {
+            if (e.getDamager().getType() == EntityType.FIREBALL || e.getDamager().getType() == EntityType.SNOWBALL) {
+                Projectile projectile = (Projectile) e.getDamager();
+                if (!(projectile.getShooter() instanceof Player)) return;
+                Player shooter = (Player) projectile.getShooter();
+
+                DabPlayer dabPlayer = plugin.getPlayersManager().getPlayer(player.getUniqueId());
+                DabPlayer dDamager = plugin.getPlayersManager().getPlayer(shooter.getUniqueId());
+
+                Game game = plugin.getGamesManager().getPlayerGame(dabPlayer);
+                if (game == null) return;
+
+                if (shooter.getAllowFlight() || game.getState() == GameState.WAITING || game.getState() == GameState.STARTING || player.getAllowFlight()) {
+                    e.setCancelled(true);
+                    return;
+                }
+
+                if (game.getGameType() == GameType.BLOCK_SUMO) plugin.getPlayersManager().getDamageManager().handleDamage(dabPlayer, dDamager);
+                e.setDamage(0);
+            }
+            return;
+        }
+
         Player damager = (Player) e.getDamager();
 
         DabPlayer dabPlayer = plugin.getPlayersManager().getPlayer(player.getUniqueId());
@@ -141,12 +192,28 @@ public class GameListener implements Listener {
         }
 
         Block block = e.getBlock();
+        if (block.getLocation().getY() >= game.getSpawnPoints().get(0).getY() + MAX_BLOCK_HEIGHT) {
+            e.setCancelled(true);
+            return;
+        }
+
         for (Location spawnPoint : game.getSpawnPoints()) {
             if (spawnPoint.getX() == block.getLocation().getX() && spawnPoint.getZ() == block.getZ() &&
                     (spawnPoint.getY() == block.getY() || spawnPoint.getY() == (block.getY() + 1))) {
                 e.setCancelled(true);
                 return;
             }
+        }
+
+        if (block.getType() == Material.TNT) {
+            e.setCancelled(true);
+            block.getWorld().spawnEntity(block.getLocation(), EntityType.PRIMED_TNT);
+
+            ItemStack itemStack = player.getItemInHand().clone();
+            itemStack.setAmount(itemStack.getAmount() - 1);
+
+            player.setItemInHand(itemStack);
+            return;
         }
 
         if (block.getType() != Material.WOOL) return;
@@ -157,7 +224,6 @@ public class GameListener implements Listener {
 
         player.getInventory().getItemInHand().setAmount(64);
         player.updateInventory();
-
 
         game.getBlocks().add(block);
 
@@ -171,7 +237,7 @@ public class GameListener implements Listener {
 
         Game game = plugin.getGamesManager().getPlayerGame(dabPlayer);
         if (game == null) return;
-        if (game.getGameType() != GameType.BLOCK_SUMO) {
+        if (game.getGameType() != GameType.BLOCK_SUMO || player.getAllowFlight()) {
             e.setCancelled(true);
             return;
         }
@@ -187,6 +253,51 @@ public class GameListener implements Listener {
     public void onHungerLoss(FoodLevelChangeEvent e) {
         if (!(e.getEntity() instanceof Player)) return;
         e.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onChat(AsyncPlayerChatEvent e) {
+        Player player = e.getPlayer();
+        DabPlayer dabPlayer = plugin.getPlayersManager().getPlayer(player.getUniqueId());
+
+        Game game = plugin.getGamesManager().getPlayerGame(dabPlayer);
+        if (game == null) {
+            e.setCancelled(true);
+            return;
+        }
+
+        e.setCancelled(true);
+        game.announce(ChatUtils.placeholders(player, CHAT_FORMAT
+                .replace("%message%", e.getMessage())));
+    }
+
+    @EventHandler
+    public void onInteraction(PlayerInteractEvent e) {
+        Player player = e.getPlayer();
+        DabPlayer dabPlayer = plugin.getPlayersManager().getPlayer(player.getUniqueId());
+
+        Game game = plugin.getGamesManager().getPlayerGame(dabPlayer);
+        if (game == null) return;
+        if (game.getGameType() != GameType.BLOCK_SUMO) return;
+        if (game.getState() != GameState.PLAYING) {
+            e.setCancelled(true);
+            return;
+        }
+
+        if (e.getAction() == Action.RIGHT_CLICK_AIR ||  e.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            if (e.getItem() == null || e.getItem().getType() != Material.FIREBALL) return;
+
+            Location eye = player.getEyeLocation();
+            Location loc = eye.add(eye.getDirection().multiply(1.2));
+            Fireball fireball = (Fireball) loc.getWorld().spawnEntity(loc, EntityType.FIREBALL);
+            fireball.setVelocity(loc.getDirection().normalize().multiply(2));
+            fireball.setShooter(player);
+
+            ItemStack itemStack = e.getItem().clone();
+            itemStack.setAmount(itemStack.getAmount() - 1);
+
+            player.setItemInHand(itemStack);
+        }
     }
 
     private DyeColor getRandomWoolColor() {

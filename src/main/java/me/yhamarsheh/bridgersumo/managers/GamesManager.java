@@ -169,6 +169,7 @@ public class GamesManager implements Disableable {
     @Override
     public void disable() {
         for (Game game : gameList) {
+            game.getPlayerList().forEach((dabPlayer, playerState) -> dabPlayer.getPlayer().getInventory().clear());
             game.getPlayerList().clear();
             game.getBlocks().forEach(block -> {
                 block.setType(Material.AIR);

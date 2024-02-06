@@ -8,7 +8,14 @@ MySQL:
 socket_address: 0.0.0.0
 bungee: true
 
-void_height: 1
+normal_void_height: 1
+block_sumo_void_height: 1
+
+max_place_height: 12
+game_chat_format: "&7[GAME] %luckperms_prefix%%player_name%&f: %message%"
+
+minor_events_schedule: 120 # In seconds
+major_events_schedule: 320 # In seconds
 
 scoreboards:
   normal_sumo:
@@ -17,7 +24,7 @@ scoreboards:
       - ""
   block_sumo:
     title: ""
-    players_format: "%player_name%: %player_lives%"
+    players_format: "%player_color%%player_name%: %player_lives%" # Can use %player_color_letter% as well. However, it's not recommended as it the scoreboard only can take up to 32 characters.
     lines:
       - ""
 

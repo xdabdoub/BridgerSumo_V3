@@ -33,7 +33,8 @@ public class RedisManager {
 
     public void subscribe(){
         subscriber = new JedisPool("168.119.212.45", 25569);
-        subscriber.setMaxWait(Duration.ZERO);
+        subscriber.setMaxWait(Duration.ofSeconds(5));
+        subscriber.setMinIdle(Integer.MAX_VALUE);
 
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Jedis jedis = subscriber.getResource()) {

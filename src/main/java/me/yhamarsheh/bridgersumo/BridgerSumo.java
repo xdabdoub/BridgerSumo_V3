@@ -4,17 +4,21 @@ import me.yhamarsheh.bridgersumo.commands.MainCMD;
 import me.yhamarsheh.bridgersumo.commands.handler.CommandRegistry;
 import me.yhamarsheh.bridgersumo.game.GameListener;
 import me.yhamarsheh.bridgersumo.handlers.RedisManager;
+import me.yhamarsheh.bridgersumo.hooks.PAPI;
 import me.yhamarsheh.bridgersumo.listeners.DataHandlingListener;
 import me.yhamarsheh.bridgersumo.listeners.SetupListener;
 import me.yhamarsheh.bridgersumo.locale.Messages;
+import me.yhamarsheh.bridgersumo.managers.EventsManager;
 import me.yhamarsheh.bridgersumo.managers.GamesManager;
 import me.yhamarsheh.bridgersumo.managers.PlayersManager;
 import me.yhamarsheh.bridgersumo.managers.ScoreboardManager;
 import me.yhamarsheh.bridgersumo.storage.SQLDatabase;
 import me.yhamarsheh.bridgersumo.utilities.LocationUtils;
 import me.yhamarsheh.bridgersumo.utilities.Logger;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -28,6 +32,7 @@ public class BridgerSumo extends JavaPlugin {
     private SQLDatabase sqlDatabase;
     private PlayersManager playersManager;
     private GamesManager gamesManager;
+    private EventsManager eventsManager;
     private ScoreboardManager scoreboardManager;
 
     public static Location LOBBY_LOCATION;
@@ -55,6 +60,7 @@ public class BridgerSumo extends JavaPlugin {
     public void onDisable() {
         playersManager.disable();
         gamesManager.disable();
+        eventsManager.disable();
 
         redisManager.closeConnection();
         scoreboardManager.disable();
@@ -70,6 +76,7 @@ public class BridgerSumo extends JavaPlugin {
         sqlDatabase = new SQLDatabase(this);
         playersManager = new PlayersManager(this);
         gamesManager = new GamesManager(this);
+        eventsManager = new EventsManager(this);
         scoreboardManager = new ScoreboardManager(this);
 
         registry = new CommandRegistry(this);
@@ -81,6 +88,7 @@ public class BridgerSumo extends JavaPlugin {
 
         setupMessages();
 
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) new PAPI(this);
         if (getConfig().getString("lobby") == null || getConfig().getString("lobby").isEmpty()) return;
         LOBBY_LOCATION = LocationUtils.decodeLocation(getConfig().getString("lobby"));
     }
@@ -149,6 +157,10 @@ public class BridgerSumo extends JavaPlugin {
 
     public GamesManager getGamesManager() {
         return gamesManager;
+    }
+
+    public EventsManager getEventsManager() {
+        return eventsManager;
     }
 
     public PlayersManager getPlayersManager() {

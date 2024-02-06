@@ -2,6 +2,7 @@ package me.yhamarsheh.bridgersumo.game.modes;
 
 import dev.triumphteam.gui.builder.item.ItemBuilder;
 import me.yhamarsheh.bridgersumo.BridgerSumo;
+import me.yhamarsheh.bridgersumo.enums.DColor;
 import me.yhamarsheh.bridgersumo.enums.GameState;
 import me.yhamarsheh.bridgersumo.enums.PlayerState;
 import me.yhamarsheh.bridgersumo.game.Game;
@@ -10,6 +11,8 @@ import me.yhamarsheh.bridgersumo.locale.Messages;
 import me.yhamarsheh.bridgersumo.managers.DamageManager;
 import me.yhamarsheh.bridgersumo.objects.TeamColor;
 import me.yhamarsheh.bridgersumo.runnables.RespawnRB;
+import me.yhamarsheh.bridgersumo.runnables.events.MajorEventsRB;
+import me.yhamarsheh.bridgersumo.runnables.events.MinorEventsRB;
 import me.yhamarsheh.bridgersumo.storage.objects.DabPlayer;
 import me.yhamarsheh.bridgersumo.utilities.ChatUtils;
 import org.bukkit.*;
@@ -23,27 +26,20 @@ import java.util.stream.Collectors;
 public class BlockSumo extends Game {
 
     private Map<DabPlayer, Integer> lives;
-    private final Set<TeamColor> teamColorList;
+    private final List<TeamColor> teamColorList;
     private Location goldBlock;
+
+    private final Random r;
 
     public BlockSumo(BridgerSumo plugin, String displayName, int maxPlayers) {
         super(plugin, GameType.BLOCK_SUMO, displayName, maxPlayers);
         this.lives = new HashMap<>();
+        this.r = new Random();
 
-        this.teamColorList = new HashSet<>();
-
-        teamColorList.add(new TeamColor(ChatColor.RED));
-        teamColorList.add(new TeamColor(ChatColor.AQUA));
-        teamColorList.add(new TeamColor(ChatColor.BLUE));
-        teamColorList.add(new TeamColor(ChatColor.GRAY));
-        teamColorList.add(new TeamColor(ChatColor.LIGHT_PURPLE));
-        teamColorList.add(new TeamColor(ChatColor.GREEN));
-        teamColorList.add(new TeamColor(ChatColor.DARK_GREEN));
-        teamColorList.add(new TeamColor(ChatColor.YELLOW));
-        teamColorList.add(new TeamColor(ChatColor.WHITE));
-        teamColorList.add(new TeamColor(ChatColor.GOLD));
-        teamColorList.add(new TeamColor(ChatColor.DARK_RED));
-        teamColorList.add(new TeamColor(ChatColor.DARK_BLUE));
+        this.teamColorList = new ArrayList<>();
+        for (DColor dColor : DColor.values()) {
+            teamColorList.add(new TeamColor(dColor));
+        }
     }
 
     @Override
@@ -57,7 +53,13 @@ public class BlockSumo extends Game {
         int i = 0;
         for (DabPlayer dabPlayer : getPlayerList().keySet()) {
             dabPlayer.getPlayer().removePotionEffect(PotionEffectType.INVISIBILITY);
+            dabPlayer.getPlayer().setGameMode(GameMode.SURVIVAL);
             dabPlayer.teleport(getSpawnPoints().get(i++));
+
+            if (i < teamColorList.size())
+                teamColorList.get(i).getPlayers().add(dabPlayer);
+            else teamColorList.get(r.nextInt(teamColorList.size())).getPlayers().add(dabPlayer);
+
             giveKit(dabPlayer);
             plugin.getScoreboardManager().createBoard(this, dabPlayer);
 
@@ -65,6 +67,9 @@ public class BlockSumo extends Game {
         }
 
         setState(GameState.PLAYING);
+
+        new MinorEventsRB(plugin, this);
+        new MajorEventsRB(plugin, this);
     }
 
     @Override
@@ -77,10 +82,19 @@ public class BlockSumo extends Game {
 
         player.getBlockSumoStatistics().addDeath();
 
+        hideFromOtherPlayers(player);
         player.getPlayer().setAllowFlight(true);
         player.getPlayer().setFlying(true);
         player.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1));
         player.getPlayer().getInventory().clear();
+
+        player.getPlayer().getInventory().setHelmet(null);
+        player.getPlayer().getInventory().setChestplate(null);
+        player.getPlayer().getInventory().setLeggings(null);
+        player.getPlayer().getInventory().setBoots(null);
+
+        player.getPlayer().updateInventory();
+
         player.teleport(getSpectatorLobby());
 
         if (playerLives == 0) {
@@ -94,6 +108,7 @@ public class BlockSumo extends Game {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (player.isOnline() && plugin.getGamesManager().getPlayerGame(player) == this) {
 
+                    showToOtherPlayers(player);
                     player.getPlayer().removePotionEffect(PotionEffectType.INVISIBILITY);
                     player.getPlayer().setAllowFlight(false);
                     player.getPlayer().setFlying(false);
@@ -112,8 +127,11 @@ public class BlockSumo extends Game {
                 lastDamageInfo.getLastDamager().getBlockSumoStatistics().addKill();
                 lastDamageInfo.getLastDamager().playSound(Sound.SUCCESSFUL_HIT);
 
+                plugin.getPlayersManager().getDamageManager().getData().remove(player.getUniqueId());
+
                 announce(ChatUtils.placeholders(player.getPlayer(), Messages.PUSHED_INTO_THE_VOID.toString()
-                        .replace("%pusher_name%", lastDamageInfo.getLastDamager().getPlayer().getName())));
+                        .replace("%pusher_name%", lastDamageInfo.getLastDamager().getPlayer().getName())
+                        .replace("%pusher_color%", getPlayerTeam(lastDamageInfo.getLastDamager()).getColor().getChatColor() + "")));
             } else {
                 announce(ChatUtils.placeholders(player.getPlayer(), Messages.FELL_INTO_THE_VOID.toString()));
             }
@@ -146,9 +164,16 @@ public class BlockSumo extends Game {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (dabPlayer.isOnline() && plugin.getGamesManager().getPlayerGame(dabPlayer) == this) {
                     dabPlayer.getPlayer().getInventory().clear();
+                    dabPlayer.getPlayer().getInventory().setHelmet(null);
+                    dabPlayer.getPlayer().getInventory().setChestplate(null);
+                    dabPlayer.getPlayer().getInventory().setLeggings(null);
+                    dabPlayer.getPlayer().getInventory().setBoots(null);
+
+                    dabPlayer.getPlayer().updateInventory();
                     dabPlayer.getPlayer().setAllowFlight(false);
                     dabPlayer.getPlayer().setFlying(false);
                     dabPlayer.getPlayer().removePotionEffect(PotionEffectType.INVISIBILITY);
+                    showToOtherPlayers(dabPlayer);
 
                     if (!plugin.isBungeeEnabled()) dabPlayer.teleport(BridgerSumo.LOBBY_LOCATION);
                     else dabPlayer.getPlayer().performCommand(plugin.getConfig().getString("lobby_command"));
@@ -162,6 +187,7 @@ public class BlockSumo extends Game {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             lives.clear();
             getPlayerList().clear();
+            teamColorList.forEach(teamColor -> teamColor.getPlayers().clear());
             setState(GameState.WAITING);
         }, 20 * 6);
 
@@ -178,6 +204,9 @@ public class BlockSumo extends Game {
             this.lives.replace(player, 1);
             deathLogic(player, true);
         }
+
+        TeamColor teamColor = getPlayerTeam(player);
+        if (teamColor != null) teamColor.getPlayers().remove(player);
 
         getPlayerList().remove(player);
         lives.remove(player);
@@ -198,6 +227,12 @@ public class BlockSumo extends Game {
     public void giveKit(DabPlayer player) {
         player.getPlayer().getInventory().setItem(0, ItemBuilder.from(Material.SHEARS).unbreakable().build());
         player.getPlayer().getInventory().setItem(1, new ItemStack(Material.WOOL, 64));
+
+        TeamColor teamColor = getPlayerTeam(player);
+        player.getPlayer().getInventory().setHelmet(teamColor.getArmor()[0]);
+        player.getPlayer().getInventory().setChestplate(teamColor.getArmor()[1]);
+        player.getPlayer().getInventory().setLeggings(teamColor.getArmor()[2]);
+        player.getPlayer().getInventory().setBoots(teamColor.getArmor()[3]);
     }
 
     public void setGoldBlock(Location goldBlock) {
@@ -211,6 +246,19 @@ public class BlockSumo extends Game {
     public int getPlayerLives(DabPlayer dabPlayer) {
         return lives.get(dabPlayer);
     }
+    public String getPlayerLivesAsString(DabPlayer dabPlayer) {
+        int lives = getPlayerLives(dabPlayer);
+
+        if (lives >= 4) {
+            return String.format(Messages.HIGH_LIVES_COLOR.toString(), lives);
+        } else if (lives >= 2) {
+            return String.format(Messages.MEDIUM_LIVES_COLOR.toString(), lives);
+        } else if (lives == 1) {
+            return String.format(Messages.LOW_LIVES_COLOR.toString(), lives);
+        } else {
+            return Messages.DEAD_SYMBOL.toString();
+        }
+    }
 
     public void sortPlayerListByLives() {
         lives = getLives().entrySet().stream()
@@ -221,6 +269,14 @@ public class BlockSumo extends Game {
                         (a, b) -> b,
                         LinkedHashMap::new
                 ));
+    }
+
+    public TeamColor getPlayerTeam(DabPlayer dabPlayer) {
+        for (TeamColor teamColor : teamColorList) {
+            if (teamColor.getPlayers().contains(dabPlayer)) return teamColor;
+        }
+
+        return null;
     }
 
     public Map<DabPlayer, Integer> getLives() {
