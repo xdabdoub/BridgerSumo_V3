@@ -62,6 +62,10 @@ public class DabPlayer {
         player.playSound(player.getLocation(), sound, 1f, 1f);
     }
 
+    public void playSound(Sound sound, Location location) {
+        player.playSound(location, sound, 1f, 1f);
+    }
+
     public void sendMessageWithPAPI(String s) {
         sendMessage(PlaceholderAPI.setPlaceholders(player, s));
     }

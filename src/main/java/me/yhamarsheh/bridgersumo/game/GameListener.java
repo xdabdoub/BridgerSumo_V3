@@ -4,37 +4,41 @@ import me.yhamarsheh.bridgersumo.BridgerSumo;
 import me.yhamarsheh.bridgersumo.enums.Debug;
 import me.yhamarsheh.bridgersumo.enums.GameState;
 import me.yhamarsheh.bridgersumo.game.modes.BlockSumo;
+import me.yhamarsheh.bridgersumo.locale.Messages;
 import me.yhamarsheh.bridgersumo.runnables.GoldBlockWin;
 import me.yhamarsheh.bridgersumo.storage.objects.DabPlayer;
 import me.yhamarsheh.bridgersumo.utilities.ChatUtils;
-import net.minecraft.server.v1_8_R3.BlockPosition;
-import net.minecraft.server.v1_8_R3.PacketPlayOutBlockBreakAnimation;
-import org.bukkit.Bukkit;
-import org.bukkit.DyeColor;
-import org.bukkit.Location;
+import me.yhamarsheh.bridgersumo.utilities.Logger;
+import net.minecraft.server.v1_8_R3.*;
+import org.bukkit.*;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftFireball;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftTNTPrimed;
 import org.bukkit.entity.*;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.FoodLevelChangeEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.entity.*;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.Wool;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
+import java.lang.reflect.Field;
+import java.util.Collection;
+import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 
@@ -47,6 +51,21 @@ public class GameListener implements Listener {
 
     private final String CHAT_FORMAT;
 
+    // Fireball Attributes
+    private final double FB_EXPLOSION_SIZE;
+    private final boolean FB_MAKE_FIRE;
+    private final double FB_HORIZONTAL;
+    private final double FB_VERTICAL;
+    private final double FB_SPEED_MULTIPLIER;
+
+    // TNT Attributes
+    private final double TNT_BARY_CENTER_ALTERNATION_IN_Y;
+    private final double TNT_STRENGTH_REDUCTION_CONSTANT;
+    private final double TNT_Y_AXIS_REDUCTION_CONSTANT;
+
+    // Border
+    private final int BORDER_SIZE;
+
     public GameListener(BridgerSumo plugin) {
         this.plugin = plugin;
         this.NORMAL_VOID_HEIGHT = plugin.getConfig().getInt("normal_void_height");
@@ -54,6 +73,18 @@ public class GameListener implements Listener {
         this.MAX_BLOCK_HEIGHT = plugin.getConfig().getInt("max_place_height");
 
         this.CHAT_FORMAT = plugin.getConfig().getString("game_chat_format");
+
+        this.FB_EXPLOSION_SIZE = plugin.getConfig().getDouble("fireball.explosion_size");
+        this.FB_MAKE_FIRE = plugin.getConfig().getBoolean("fireball.make_fire");
+        this.FB_HORIZONTAL = plugin.getConfig().getDouble("fireball.horizontal");
+        this.FB_VERTICAL = plugin.getConfig().getDouble("fireball.vertical");
+        this.FB_SPEED_MULTIPLIER = plugin.getConfig().getDouble("fireball.speed_multiplier");
+
+        this.TNT_BARY_CENTER_ALTERNATION_IN_Y = plugin.getConfig().getDouble("tnt.bary_center_alternation_in_y");
+        this.TNT_STRENGTH_REDUCTION_CONSTANT = plugin.getConfig().getDouble("tnt.strength_reduction_constant");
+        this.TNT_Y_AXIS_REDUCTION_CONSTANT = plugin.getConfig().getDouble("tnt.y_axis_reduction_constant");
+
+        this.BORDER_SIZE = plugin.getConfig().getInt("block_sumo_max_distance_from_center");
 
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -73,6 +104,16 @@ public class GameListener implements Listener {
                 } else {
                     player.teleport(game.getWaitingLobby());
                 }
+            }
+
+            if (dabPlayer.getLocation().distance(((BlockSumo)game).getGoldBlock()) > BORDER_SIZE + 5) {
+                dabPlayer.sendMessage(Messages.WHY_YOU_FLYING.toString());
+                Location loc = player.getLocation();
+                Vector vector = loc.getDirection().multiply(-1);
+                vector.normalize();
+                vector.multiply(5);
+                loc.add(vector);
+                player.teleport(loc);
             }
         } else if (game.getGameType() == GameType.NORMAL) {
             if (dabPlayer.getLocation().getY() <= game.getSpawnPoints().get(0).getY() - NORMAL_VOID_HEIGHT && game.getState() != GameState.ENDED) {
@@ -117,8 +158,53 @@ public class GameListener implements Listener {
     }
 
     @EventHandler
+    public void onPickup(PlayerPickupItemEvent e) {
+        Player player = e.getPlayer();
+
+        DabPlayer dabPlayer = plugin.getPlayersManager().getPlayer(player.getUniqueId());
+        Game game = plugin.getGamesManager().getPlayerGame(dabPlayer);
+        if (game == null) return;
+
+        if (!game.isSpectating(dabPlayer)) return;
+        e.setCancelled(true);
+    }
+
+    @EventHandler
+    public void onDrop(PlayerDropItemEvent e) {
+        Player player = e.getPlayer();
+
+        DabPlayer dabPlayer = plugin.getPlayersManager().getPlayer(player.getUniqueId());
+        Game game = plugin.getGamesManager().getPlayerGame(dabPlayer);
+        if (game == null) return;
+        e.setCancelled(true);
+    }
+
+    @EventHandler
     public void onEntityExplode(EntityExplodeEvent e) {
-        e.blockList().clear();
+        if (e.getEntity().getType() == EntityType.PRIMED_TNT) {
+
+            TNTPrimed tnt = (TNTPrimed) e.getEntity();
+            Player shooter = (Player) tnt.getSource();
+
+            if (shooter == null) return;
+            DabPlayer dDamager = plugin.getPlayersManager().getPlayer(shooter.getUniqueId());
+
+            Game game = plugin.getGamesManager().getPlayerGame(dDamager);
+            if (game == null) return;
+
+            e.blockList().removeIf(block -> !game.getBlocks().contains(block));
+        } else if (e.getEntity().getType() == EntityType.FIREBALL) {
+
+            Fireball fireball = (Fireball) e.getEntity();
+            Player shooter = (Player) fireball.getShooter();
+
+            if (shooter == null) return;
+            DabPlayer dDamager = plugin.getPlayersManager().getPlayer(shooter.getUniqueId());
+
+            Game game = plugin.getGamesManager().getPlayerGame(dDamager);
+            if (game == null) return;
+            e.blockList().removeIf(block -> !game.getBlocks().contains(block));
+        }
     }
 
     @EventHandler
@@ -146,6 +232,31 @@ public class GameListener implements Listener {
                 }
 
                 if (game.getGameType() == GameType.BLOCK_SUMO) plugin.getPlayersManager().getDamageManager().handleDamage(dabPlayer, dDamager);
+                e.setDamage(0);
+            } else if (e.getDamager().getType() == EntityType.PRIMED_TNT) {
+                TNTPrimed tntPrimed = (TNTPrimed) e.getDamager();
+                Player shooter = (Player) tntPrimed.getSource();
+
+                DabPlayer dabPlayer = plugin.getPlayersManager().getPlayer(player.getUniqueId());
+                DabPlayer dDamager = plugin.getPlayersManager().getPlayer(shooter.getUniqueId());
+
+                Game game = plugin.getGamesManager().getPlayerGame(dabPlayer);
+                if (game == null) return;
+
+                if (shooter.getAllowFlight() || game.getState() == GameState.WAITING || game.getState() == GameState.STARTING || player.getAllowFlight()) {
+                    e.setCancelled(true);
+                    return;
+                }
+
+                if (game.getGameType() == GameType.BLOCK_SUMO) plugin.getPlayersManager().getDamageManager().handleDamage(dabPlayer, dDamager);
+
+                Vector distance = player.getLocation().subtract(0, TNT_BARY_CENTER_ALTERNATION_IN_Y, 0).toVector().subtract(tntPrimed.getLocation().toVector());
+                Vector direction = distance.clone().normalize();
+                double force = ((tntPrimed.getYield() * tntPrimed.getYield()) / (TNT_STRENGTH_REDUCTION_CONSTANT + distance.length()));
+                Vector resultingForce = direction.clone().multiply(force);
+                resultingForce.setY(resultingForce.getY() / (distance.length() + TNT_Y_AXIS_REDUCTION_CONSTANT));
+                player.setVelocity(resultingForce);
+
                 e.setDamage(0);
             }
             return;
@@ -197,22 +308,26 @@ public class GameListener implements Listener {
             return;
         }
 
+        if (game.getGameType() == GameType.BLOCK_SUMO) {
+            if (block.getLocation().distance(((BlockSumo)game).getGoldBlock()) > BORDER_SIZE) {
+                e.setCancelled(true);
+                return;
+            }
+        }
+
         for (Location spawnPoint : game.getSpawnPoints()) {
-            if (spawnPoint.getX() == block.getLocation().getX() && spawnPoint.getZ() == block.getZ() &&
-                    (spawnPoint.getY() == block.getY() || spawnPoint.getY() == (block.getY() + 1))) {
+            if (spawnPoint.equals(block.getLocation())) {
                 e.setCancelled(true);
                 return;
             }
         }
 
         if (block.getType() == Material.TNT) {
-            e.setCancelled(true);
-            block.getWorld().spawnEntity(block.getLocation(), EntityType.PRIMED_TNT);
+            block.setType(Material.AIR);
 
-            ItemStack itemStack = player.getItemInHand().clone();
-            itemStack.setAmount(itemStack.getAmount() - 1);
-
-            player.setItemInHand(itemStack);
+            TNTPrimed tnt = Objects.requireNonNull(e.getBlock().getLocation().getWorld()).spawn(e.getBlock().getLocation().add(0.5, 0, 0.5), TNTPrimed.class);
+            tnt.setFuseTicks(45);
+            setSource(tnt, player);
             return;
         }
 
@@ -256,6 +371,46 @@ public class GameListener implements Listener {
     }
 
     @EventHandler
+    public void onFireballHit(ProjectileHitEvent e) {
+        if(!(e.getEntity() instanceof Fireball)) return;
+        Location location = e.getEntity().getLocation();
+
+        ProjectileSource projectileSource = e.getEntity().getShooter();
+        if(!(projectileSource instanceof Player)) return;
+        Player source = (Player) projectileSource;
+        DabPlayer dabPlayer = plugin.getPlayersManager().getPlayer(source.getUniqueId());
+
+        Game game = plugin.getGamesManager().getPlayerGame(dabPlayer);
+        if (game == null) return;
+
+        Vector vector = location.toVector();
+
+        World world = location.getWorld();
+
+        assert world != null;
+        Collection<Entity> nearbyEntities = world
+                .getNearbyEntities(location, FB_EXPLOSION_SIZE, FB_EXPLOSION_SIZE, FB_EXPLOSION_SIZE);
+        for(Entity entity : nearbyEntities) {
+            if(!(entity instanceof Player)) continue;
+            Player player = (Player) entity;
+            DabPlayer dabPlayer1 = plugin.getPlayersManager().getPlayer(player.getUniqueId());
+            if(plugin.getGamesManager().getPlayerGame(dabPlayer1) == null) continue;
+
+            Vector playerVector = player.getLocation().toVector();
+            Vector normalizedVector = vector.subtract(playerVector).normalize();
+            Vector horizontalVector = normalizedVector.multiply(-FB_HORIZONTAL);
+            double y = normalizedVector.getY();
+            /*if(y < 0 ) y += 1.5;*/
+            if(true) {
+                y = FB_VERTICAL*1.5; // kb for not jumping
+            } else {
+                y = y*FB_VERTICAL*1.5; // kb for jumping
+            }
+            player.setVelocity(horizontalVector.setY(y));
+        }
+    }
+
+    @EventHandler
     public void onChat(AsyncPlayerChatEvent e) {
         Player player = e.getPlayer();
         DabPlayer dabPlayer = plugin.getPlayersManager().getPlayer(player.getUniqueId());
@@ -284,19 +439,38 @@ public class GameListener implements Listener {
             return;
         }
 
+        BlockSumo blockSumo = (BlockSumo) game;
+
         if (e.getAction() == Action.RIGHT_CLICK_AIR ||  e.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            if (e.getItem() == null || e.getItem().getType() != Material.FIREBALL) return;
+            if (e.getItem() == null || e.getItem().getType() == Material.AIR) return;
 
-            Location eye = player.getEyeLocation();
-            Location loc = eye.add(eye.getDirection().multiply(1.2));
-            Fireball fireball = (Fireball) loc.getWorld().spawnEntity(loc, EntityType.FIREBALL);
-            fireball.setVelocity(loc.getDirection().normalize().multiply(2));
-            fireball.setShooter(player);
+            switch (e.getItem().getType()) {
+                case FIREBALL:
+                    e.setCancelled(true);
 
-            ItemStack itemStack = e.getItem().clone();
-            itemStack.setAmount(itemStack.getAmount() - 1);
+                    Fireball fb = player.launchProjectile(Fireball.class);
+                    Vector direction = player.getEyeLocation().getDirection();
+                    fb = setFireballDirection(fb, direction);
+                    fb.setVelocity(fb.getDirection().multiply(FB_SPEED_MULTIPLIER));
+                    fb.setIsIncendiary(FB_MAKE_FIRE);
+                    fb.setYield((float) FB_EXPLOSION_SIZE);
 
-            player.setItemInHand(itemStack);
+                    ItemStack itemStack = e.getItem().clone();
+                    itemStack.setAmount(itemStack.getAmount() - 1);
+
+                    player.setItemInHand(itemStack);
+                    break;
+                case NETHER_STAR:
+                    e.setCancelled(true);
+                    blockSumo.getLives().replace(dabPlayer, blockSumo.getPlayerLives(dabPlayer) + 1);
+                    dabPlayer.sendMessage(Messages.LIFE_ADDED_USING_NETHER_STAR.toString());
+
+                    ItemStack itemStack2 = e.getItem().clone();
+                    itemStack2.setAmount(itemStack2.getAmount() - 1);
+
+                    player.setItemInHand(itemStack2);
+                    break;
+            }
         }
     }
 
@@ -360,5 +534,25 @@ public class GameListener implements Listener {
         return   ((block.getX() & 0xFFF) << 20)
                 | ((block.getZ() & 0xFFF) << 8)
                 | (block.getY() & 0xFF);
+    }
+
+    private void setSource(TNTPrimed tnt, Player owner) {
+        EntityLiving nmsEntityLiving = (((CraftLivingEntity) owner).getHandle());
+        EntityTNTPrimed nmsTNT = (((CraftTNTPrimed) tnt).getHandle());
+        try {
+            Field sourceField = EntityTNTPrimed.class.getDeclaredField("source");
+            sourceField.setAccessible(true);
+            sourceField.set(nmsTNT, nmsEntityLiving);
+        } catch (Exception ex) {
+            BridgerSumo.LOGGER.error(Logger.Reason.GENERIC, "An exception occurred while attempting to the set the source of a TNT block. More Info: " + ex.toString());
+        }
+    }
+
+    public Fireball setFireballDirection(Fireball fireball, Vector vector) {
+        EntityFireball fb = ((CraftFireball) fireball).getHandle();
+        fb.dirX = vector.getX() * 0.1D;
+        fb.dirY = vector.getY() * 0.1D;
+        fb.dirZ = vector.getZ() * 0.1D;
+        return (Fireball) fb.getBukkitEntity();
     }
 }

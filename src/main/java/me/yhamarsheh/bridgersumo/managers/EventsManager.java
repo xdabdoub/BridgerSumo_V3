@@ -63,7 +63,7 @@ public class EventsManager implements Disableable {
                 majorItems.add(new EventItem(itemStack, displayName));
 
                 configuration.set("major_events." + (minorItems.size()) + ".displayName", displayName);
-                configuration.set("major_events." + (minorItems.size()), itemStack.serialize());
+                configuration.set("major_events." + (minorItems.size()) + ".item", itemStack.serialize());
                 break;
         }
 

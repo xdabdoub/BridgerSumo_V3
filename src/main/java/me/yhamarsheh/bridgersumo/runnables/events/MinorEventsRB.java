@@ -42,6 +42,7 @@ public class MinorEventsRB extends BukkitRunnable {
                 .get(r.nextInt(plugin.getEventsManager().getItems(EventType.MINOR).size()));
 
         for (DabPlayer dabPlayer : game.getPlayerList().keySet()) {
+            if (game.isSpectating(dabPlayer)) continue;
             dabPlayer.getPlayer().getInventory().addItem(eventItem.getItemStack());
         }
 

@@ -11,11 +11,26 @@ bungee: true
 normal_void_height: 1
 block_sumo_void_height: 1
 
+block_sumo_max_distance_from_center: 20 # This means that the player can travel a max of 20 blocks of the center (gold block) and that they cannot place blocks outside that region
+
 max_place_height: 12
 game_chat_format: "&7[GAME] %luckperms_prefix%%player_name%&f: %message%"
 
 minor_events_schedule: 120 # In seconds
 major_events_schedule: 320 # In seconds
+start_major_particles_animation_before: 10 # This means, the animation will start x seconds before the item drops on top of the golden block
+
+fireball:
+  explosion_size: 3
+  speed_multiplier: 10
+  make_fire: false
+  horizontal: 1.0
+  vertical: 0.65
+
+tnt:
+  bary_center_alternation_in_y: 0.5
+  strength_reduction_constant: 3
+  y_axis_reduction_constant: 2
 
 scoreboards:
   normal_sumo:

@@ -124,14 +124,19 @@ public class BlockSumo extends Game {
             if (plugin.getPlayersManager().getDamageManager().isValidDamage(player)) {
                 DamageManager.LastDamageInfo lastDamageInfo = plugin.getPlayersManager().getDamageManager().getLastDamageInfo(player);
 
-                lastDamageInfo.getLastDamager().getBlockSumoStatistics().addKill();
-                lastDamageInfo.getLastDamager().playSound(Sound.SUCCESSFUL_HIT);
+                if (lastDamageInfo.getLastDamager() == player) {
+                    announce(ChatUtils.placeholders(player.getPlayer(), Messages.FELL_INTO_THE_VOID.toString()));
+                } else {
 
-                plugin.getPlayersManager().getDamageManager().getData().remove(player.getUniqueId());
+                    lastDamageInfo.getLastDamager().getBlockSumoStatistics().addKill();
+                    lastDamageInfo.getLastDamager().playSound(Sound.SUCCESSFUL_HIT);
 
-                announce(ChatUtils.placeholders(player.getPlayer(), Messages.PUSHED_INTO_THE_VOID.toString()
-                        .replace("%pusher_name%", lastDamageInfo.getLastDamager().getPlayer().getName())
-                        .replace("%pusher_color%", getPlayerTeam(lastDamageInfo.getLastDamager()).getColor().getChatColor() + "")));
+                    plugin.getPlayersManager().getDamageManager().getData().remove(player.getUniqueId());
+
+                    announce(ChatUtils.placeholders(player.getPlayer(), Messages.PUSHED_INTO_THE_VOID.toString()
+                            .replace("%pusher_name%", lastDamageInfo.getLastDamager().getPlayer().getName())
+                            .replace("%pusher_color%", getPlayerTeam(lastDamageInfo.getLastDamager()).getColor().getChatColor() + "")));
+                }
             } else {
                 announce(ChatUtils.placeholders(player.getPlayer(), Messages.FELL_INTO_THE_VOID.toString()));
             }

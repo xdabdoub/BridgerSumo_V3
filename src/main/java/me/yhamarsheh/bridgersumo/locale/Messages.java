@@ -44,7 +44,9 @@ public enum Messages {
     HIGH_LIVES_COLOR("high_lives_color", "&a%s"),
     MEDIUM_LIVES_COLOR("medium_lives_color", "&6%s"),
     LOW_LIVES_COLOR("low_lives_color", "&c%s"),
-    DEAD_SYMBOL("dead_symbol", "&c✘");
+    DEAD_SYMBOL("dead_symbol", "&c✘"),
+    WHY_YOU_FLYING("why_you_flying", "&cUh oh! You cannot go past this point."),
+    LIFE_ADDED_USING_NETHER_STAR("life_added_using_nether_star", "&7\n&bYou were granted a new life!\n&7");
 
     final String path;
     String s;

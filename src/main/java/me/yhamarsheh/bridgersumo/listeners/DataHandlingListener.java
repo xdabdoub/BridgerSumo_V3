@@ -51,6 +51,6 @@ public class DataHandlingListener implements Listener {
             player.performCommand("bridgersumo join " + plugin.getRedisManager()
                     .getGameMap().get(player.getUniqueId()).getId());
             plugin.getRedisManager().getGameMap().remove(player.getUniqueId());
-        }, 3L);
+        }, 2L);
     }
 }

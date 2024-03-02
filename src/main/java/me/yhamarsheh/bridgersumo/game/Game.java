@@ -135,6 +135,10 @@ public abstract class Game {
         return playerList.get(player) == PlayerState.ALIVE;
     }
 
+    public boolean isSpectating(DabPlayer player) {
+        return player.getPlayer().getAllowFlight();
+    }
+
     public void setId(int id) {
         this.id = id;
     }
