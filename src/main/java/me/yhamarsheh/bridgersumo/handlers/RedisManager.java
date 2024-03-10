@@ -102,18 +102,17 @@ public class RedisManager {
         @Nullable
         private Game getGame(GameType type) {
             Game maxWaitingPlayersGame = null;
-//            int maxWaitingPlayersCount = -1;
+            int maxWaitingPlayersCount = -1;
 
             for (Game game : plugin.getGamesManager().getGameList()) {
                 if (game.getGameType() != type) continue;
 
                 if (game.getState() == GameState.WAITING) {
-                    /*int waitingPlayersCount = game.getPlayerList().size();
+                    int waitingPlayersCount = game.getPlayerList().size();
                     if (waitingPlayersCount > maxWaitingPlayersCount) {
                         maxWaitingPlayersCount = waitingPlayersCount;
                         maxWaitingPlayersGame = game;
-                    }*/
-                    return game;
+                    }
                 }
             }
             return maxWaitingPlayersGame;

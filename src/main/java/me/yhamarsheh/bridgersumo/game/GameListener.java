@@ -167,7 +167,6 @@ public class GameListener implements Listener {
 
         if (!game.isSpectating(dabPlayer)) return;
         e.setCancelled(true);
-        /// sssss
     }
 
     @EventHandler
