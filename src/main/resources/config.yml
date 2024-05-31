@@ -1,3 +1,4 @@
+# Config.yml
 MySQL:
   host: PRIVATE
   port: 3306
