@@ -11,7 +11,7 @@ The golden block is the central feature of Block Sumo. It serves as both a tacti
 - A **Major Event item** spawns on top of the golden block every 320 seconds, providing powerful enhancements to the first player who claims it.
 
 ### Golden Block Flame Visualization
-Below is a mathematical representation [Reference](https://help.desmos.com/hc/en-us/articles/4406895312781-Polar-Graphing) of the flame ring surrounding the golden block, generated using a polar equation:
+Below is a mathematical representation [(Reference)](https://help.desmos.com/hc/en-us/articles/4406895312781-Polar-Graphing) of the flame ring surrounding the golden block, generated using a polar equation:
 
 ![Equation Representation](https://help.desmos.com/hc/article_attachments/28782670480141)
 
