@@ -17,10 +17,7 @@ Below is a mathematical representation [(Reference)](https://help.desmos.com/hc/
 
 ### Animated Golden Block Flames
 
-<video width="600" controls>
-  <source src="https://images-ext-1.discordapp.net/external/IbufZAr9jfoDIaTPkI5-O47pBpYIJz78mJB7sJxgWWc/https/i.imgur.com/LwnzhiI.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+![Golden Block Flames](https://i.imgur.com/UfZRZ0K.gif)
 
 ## Game Features
 ### Events
