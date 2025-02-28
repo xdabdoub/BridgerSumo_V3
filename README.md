@@ -101,7 +101,7 @@ scoreboards:
       - ""
 
 lobby_command: 'lobby'
-version: 1.1
+version: 3.0.1
 ```
 
 ### PlaceholderAPI Support
