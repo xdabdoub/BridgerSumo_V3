@@ -124,6 +124,4 @@ Spawning and respawning are randomized, ensuring no two players spawn in the sam
 ## Conclusion
 Bridger Sumo is structured with clean and efficient code. While there is always room for improvement, it is designed to provide an optimal gameplay experience for players and server administrators alike.
 
-### References
-Idea originated from 
 ## Media
