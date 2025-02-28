@@ -3,6 +3,8 @@
 ## Overview
 Bridger Sumo was originally commissioned for a Minecraft network. This plugin brings both the traditional Sumo Duel and the Block Sumo minigame into a single plugin. Block Sumo is a game mode for 2-16 players, where players spawn on a medium-sized void map with five lives. Players lose a life each time they fall, and the last player remaining wins. Additionally, a gold block at the center of the platform provides an alternative win condition—if a player stands on it for 20 uninterrupted seconds, they win the game.
 
+* The concept of Block Sumo in this plugin is inspired by [BedWars Practice Club](https://store.bedwarspractice.club). This is a custom remake with additional features and improvements, designed to enhance the gameplay experience.
+
 ###  Matchmaking
 Matchmaking in **Bridger Sumo** is facilitated using **Redis Pub/Sub communication**, allowing seamless synchronization between multiple servers in a network. When a player joins a queue, the system **publishes** their request to a Redis channel, and available servers **subscribe** to these messages to process and allocate matches efficiently. This ensures **real-time matchmaking**, reducing wait times and balancing player distribution across instances. 
 
@@ -122,4 +124,6 @@ Spawning and respawning are randomized, ensuring no two players spawn in the sam
 ## Conclusion
 Bridger Sumo is structured with clean and efficient code. While there is always room for improvement, it is designed to provide an optimal gameplay experience for players and server administrators alike.
 
+### References
+Idea originated from 
 ## Media
