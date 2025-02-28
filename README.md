@@ -17,7 +17,7 @@ Below is a mathematical representation [(Reference)](https://help.desmos.com/hc/
 
 ### Animated Golden Block Flames
 
-![Flame Animation](https://images-ext-1.discordapp.net/external/IbufZAr9jfoDIaTPkI5-O47pBpYIJz78mJB7sJxgWWc/https/i.imgur.com/LwnzhiI.mp4)
+![Flame Animation](https://dqkdfaeokm5p5.cloudfront.net/n01gtn%2Fpreview%2F64936657%2Fmain_full.gif?response-content-disposition=inline%3Bfilename%3D"main_full.gif"%3B&response-content-type=image%2Fgif&Expires=1740762749&Signature=CV6T5Ogj2n9eiLU2b2KVTCga59VQ6Jcd5hyYDlWX2XdF-qGAYggPDc2m7I3mEsyjCyDywsNp2wjyFjltyPidg8kMJVJjQj7BGG7seLBQq--VpZUBbJ2F8o9~o8oII5CkZmhlKXDlngJyxiIlIdvbgfYzxbKYKkXlKsEQCCspNBNtLzwB708JZkDL19V83CjIjqOdWpLyuj~xUpHy9VaQG4tvFL41NVzaft~ZwQR8TUKxEOe~pi1NAs0p1KRkalhkLS~JcrTBYPKFiDhIC7FTwxCLAsJpP7fh5kFJcJ~mRGUjHTAYlNPIWomUGdtH2zDWaXip7F2phdf7ArgO6dltmg__&Key-Pair-Id=APKAJT5WQLLEOADKLHBQ)
 
 ## Game Features
 ### Events
